@@ -10,18 +10,17 @@
 Authors: panxu
 Date:    2020/06/08 12:13:00
 """
-from typing import Iterable
+from typing import Iterable, List
 
 from easytext.data import Instance
-from easytext.data.collate import ModelInputs
-
-from easytext.data.collate import Collate
 
 
-class EventVocabularyCollate(Collate):
+class EventVocabularyCollate:
     """
     用来计算 ACE Event
     """
 
-    def __call__(self, instances: Iterable[Instance]) -> ModelInputs:
-        pass
+    def __call__(self, instances: Iterable[Instance]) -> List[List[str]]:
+
+        return [instance["event_types"] for instance in instances]
+

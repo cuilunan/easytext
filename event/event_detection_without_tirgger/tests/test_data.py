@@ -12,21 +12,27 @@ Date:    2020/06/09 10:12:00
 """
 
 import os
+from typing import List
+from torch.utils.data import DataLoader
 
 from easytext.utils import bio
+from easytext.data import Vocabulary
 
 from event import ROOT_PATH
 from event.event_detection_without_tirgger.tests import ASSERT
 from event.event_detection_without_tirgger.data import ACEDataset
+from event.event_detection_without_tirgger.data import EventVocabularyCollate
+
+
+training_data_file_path = "data/event/event_detection_without_tirgger/tests/training_data_sample.txt"
+training_data_file_path = os.path.join(ROOT_PATH, training_data_file_path)
+ace_dataset = ACEDataset(dataset_file_path=training_data_file_path)
 
 
 def test_ace_dataset():
     """
     测试 ace dataset
     """
-    training_data_file_path = "data/event/event_detection_without_tirgger/tests/training_data_sample.txt"
-    training_data_file_path = os.path.join(ROOT_PATH, training_data_file_path)
-    ace_dataset = ACEDataset(dataset_file_path=training_data_file_path)
 
     ASSERT.assertEqual(len(ace_dataset), 3)
 
@@ -218,4 +224,25 @@ def test_ace_dataset():
     tags = {(span["label"], span["begin"], span["end"]) for span in spans}
 
     ASSERT.assertSetEqual(expect_tags, tags)
+
+
+def test_event_vocabulary_collate():
+
+    negative_event_type = "Negative"
+    expect_event_types = ["Movement:Transport", "Personnel:Elect", negative_event_type]
+
+    vocab_collate_fn = EventVocabularyCollate()
+    data_loader = DataLoader(ace_dataset, collate_fn=vocab_collate_fn)
+
+    event_types_list: List[List[str]] = list()
+
+    for ori_event_types_list in data_loader:
+        event_types_list.extend(ori_event_types_list)
+
+    vocabulary = Vocabulary(tokens=event_types_list,
+                            unk=negative_event_type,
+                            padding="",
+                            special_first=True)
+
+    ASSERT.assertEqual(len(expect_event_types), vocabulary.size)
 
