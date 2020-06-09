@@ -23,6 +23,7 @@ from event import ROOT_PATH
 from event.event_detection_without_tirgger.tests import ASSERT
 from event.event_detection_without_tirgger.data import ACEDataset
 from event.event_detection_without_tirgger.data import EventVocabularyCollate
+from event.event_detection_without_tirgger.data import EventDataset
 
 
 @fixture(scope="class")
@@ -30,6 +31,42 @@ def ace_dataset():
     training_data_file_path = "data/event/event_detection_without_tirgger/tests/training_data_sample.txt"
     training_data_file_path = os.path.join(ROOT_PATH, training_data_file_path)
     dataset = ACEDataset(dataset_file_path=training_data_file_path)
+    return dataset
+
+
+@fixture(scope="class")
+def vocabulary(ace_dataset):
+    vocab_collate_fn = EventVocabularyCollate()
+    data_loader = DataLoader(ace_dataset, collate_fn=vocab_collate_fn)
+
+    event_types_list: List[List[str]] = list()
+    tokens_list: List[List[str]] = list()
+
+    for collate_dict in data_loader:
+        event_types_list.extend(collate_dict["event_types"])
+        tokens_list.extend(collate_dict["tokens"])
+
+    negative_event_type = "Negative"
+    event_type_vocab = Vocabulary(tokens=event_types_list,
+                                  unk=negative_event_type,
+                                  padding="",
+                                  special_first=True)
+
+    word_vocab = Vocabulary(tokens=tokens_list,
+                            unk=Vocabulary.UNK,
+                            padding=Vocabulary.PADDING,
+                            special_first=True)
+    return {"event_type_vocab": event_type_vocab, "word_vocab": word_vocab}
+
+
+@fixture(scope="class")
+def event_dataset(vocabulary):
+    event_type_vocabulary = vocabulary["event_type_vocab"]
+    training_data_file_path = "data/event/event_detection_without_tirgger/tests/training_data_sample.txt"
+    training_data_file_path = os.path.join(ROOT_PATH, training_data_file_path)
+
+    dataset = EventDataset(dataset_file_path=training_data_file_path,
+                           event_type_vocabulary=event_type_vocabulary)
     return dataset
 
 
@@ -230,35 +267,43 @@ def test_ace_dataset(ace_dataset):
     ASSERT.assertSetEqual(expect_tags, tags)
 
 
-def test_event_vocabulary_collate(ace_dataset):
+def test_event_vocabulary_collate(vocabulary):
     """
     测试 event vocabulary collate
     """
+    event_type_vocab, word_vocab = vocabulary["event_type_vocab"], vocabulary["word_vocab"]
 
     negative_event_type = "Negative"
     expect_event_types = ["Movement:Transport", "Personnel:Elect", negative_event_type]
 
-    vocab_collate_fn = EventVocabularyCollate()
-    data_loader = DataLoader(ace_dataset, collate_fn=vocab_collate_fn)
-
-    event_types_list: List[List[str]] = list()
-    tokens_list: List[List[str]] = list()
-
-    for collate_dict in data_loader:
-        event_types_list.extend(collate_dict["event_types"])
-        tokens_list.extend(collate_dict["tokens"])
-
-    event_type_vocab = Vocabulary(tokens=event_types_list,
-                                  unk=negative_event_type,
-                                  padding="",
-                                  special_first=True)
-
     ASSERT.assertEqual(len(expect_event_types), event_type_vocab.size)
-
-    word_vocab = Vocabulary(tokens=tokens_list,
-                            unk=Vocabulary.UNK,
-                            padding=Vocabulary.PADDING,
-                            special_first=True)
 
     # 粗糙的测试，size 应该是比10大，具体的没有去文件中数一数
     ASSERT.assertTrue(word_vocab.size > 10)
+
+
+def test_event_dataset(event_dataset, vocabulary):
+    """
+    测试 event dataset
+    """
+
+    event_type_vocab, word_vocab = vocabulary["event_type_vocab"], vocabulary["word_vocab"]
+
+    expect_tokens = ["even", "as", "the", "secretary", "of", "homeland", "security", "was", "putting"]
+
+    ASSERT.assertEqual(3 * event_type_vocab.size, len(event_dataset))
+
+    hit = False
+    for instance in event_dataset:
+        if instance["metadata"]["sentence"][0:len("Even as the")] == "Even as the":
+            hit = True
+            if instance["event_type"] == "Movement:Transport":
+                ASSERT.assertEqual(instance["label"], 1)
+            else:
+                ASSERT.assertEqual(instance["label"], 0)
+
+            tokens = [t.text for t in instance["sentence"]][0:len(expect_tokens)]
+            ASSERT.assertListEqual(expect_tokens, tokens)
+
+    ASSERT.assertTrue(hit)
+
