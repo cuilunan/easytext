@@ -15,8 +15,9 @@ from typing import List
 from torch.utils.data import Dataset
 
 from easytext.data import Instance
-from easytext.data.tokenizer import Token
+from easytext.data.tokenizer import Token, EnTokenizer
 from easytext.utils import bio
+
 
 
 class ACEDataset(Dataset):
@@ -76,7 +77,7 @@ class ACEDataset(Dataset):
 
         instance = Instance()
 
-        instance["sentence"] = [Token(t) for t in tokens]
+        instance["sentence"] = [Token(t.lower()) for t in tokens]
 
         instance["entity_tag"] = [Token(t) for t in entity_tags]
 

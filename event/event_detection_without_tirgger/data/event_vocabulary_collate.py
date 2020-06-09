@@ -12,8 +12,8 @@ Date:    2020/06/08 12:13:00
 """
 from typing import Iterable
 
-from data import Instance
-from data.collate import ModelInputs
+from easytext.data import Instance
+from easytext.data.collate import ModelInputs
 
 from easytext.data.collate import Collate
 
