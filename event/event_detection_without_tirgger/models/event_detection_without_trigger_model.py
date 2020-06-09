@@ -20,24 +20,9 @@ from torch import Tensor
 from torch.nn.modules.loss import MSELoss
 import torch.nn.functional as F
 
-from allennlp.data import Vocabulary
-
-from allennlp.models import Model
-from allennlp.modules.text_field_embedders import TextFieldEmbedder
-from allennlp.modules.token_embedders import TokenEmbedder
-from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder
-from allennlp.nn.regularizers import RegularizerApplicator
-from allennlp.nn.util import get_text_field_mask
-from allennlp.nn.util import get_final_encoder_states
-from allennlp.nn import InitializerApplicator
-from allennlp.training.metrics import BooleanAccuracy, Metric
-
-from zznlp.models.event_detection_without_tirgger.types_define import NEGATIVE_EVENT_TYPE
-from zznlp.models.event_detection_without_tirgger.metrics import EventDetectionWithoutKeywordF1Measure
-from zznlp.models.event_detection_without_tirgger.dataset_readers import EventDetectionWithoutTriggerDatasetReader
+from easytext.model import Model
 
 
-@Model.register("EventDetectionWithoutTriggerModel")
 class EventDetectionWithoutTriggerModel(Model):
     """
     event detection without trigger
@@ -56,6 +41,7 @@ class EventDetectionWithoutTriggerModel(Model):
                  activate_score: bool = True,
                  initializer: InitializerApplicator = None,
                  regularizer: RegularizerApplicator = None):
+
         super().__init__(vocab=vocab, regularizer=regularizer)
 
         self._sentence_embedder = sentence_embedder
