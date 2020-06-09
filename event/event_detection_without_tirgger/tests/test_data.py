@@ -13,6 +13,7 @@ Date:    2020/06/09 10:12:00
 
 import os
 from typing import List
+from pytest import fixture
 from torch.utils.data import DataLoader
 
 from easytext.utils import bio
@@ -24,12 +25,15 @@ from event.event_detection_without_tirgger.data import ACEDataset
 from event.event_detection_without_tirgger.data import EventVocabularyCollate
 
 
-training_data_file_path = "data/event/event_detection_without_tirgger/tests/training_data_sample.txt"
-training_data_file_path = os.path.join(ROOT_PATH, training_data_file_path)
-ace_dataset = ACEDataset(dataset_file_path=training_data_file_path)
+@fixture(scope="class")
+def ace_dataset():
+    training_data_file_path = "data/event/event_detection_without_tirgger/tests/training_data_sample.txt"
+    training_data_file_path = os.path.join(ROOT_PATH, training_data_file_path)
+    dataset = ACEDataset(dataset_file_path=training_data_file_path)
+    return dataset
 
 
-def test_ace_dataset():
+def test_ace_dataset(ace_dataset):
     """
     测试 ace dataset
     """
@@ -226,7 +230,10 @@ def test_ace_dataset():
     ASSERT.assertSetEqual(expect_tags, tags)
 
 
-def test_event_vocabulary_collate():
+def test_event_vocabulary_collate(ace_dataset):
+    """
+    测试 event vocabulary collate
+    """
 
     negative_event_type = "Negative"
     expect_event_types = ["Movement:Transport", "Personnel:Elect", negative_event_type]
@@ -235,14 +242,23 @@ def test_event_vocabulary_collate():
     data_loader = DataLoader(ace_dataset, collate_fn=vocab_collate_fn)
 
     event_types_list: List[List[str]] = list()
+    tokens_list: List[List[str]] = list()
 
-    for ori_event_types_list in data_loader:
-        event_types_list.extend(ori_event_types_list)
+    for collate_dict in data_loader:
+        event_types_list.extend(collate_dict["event_types"])
+        tokens_list.extend(collate_dict["tokens"])
 
-    vocabulary = Vocabulary(tokens=event_types_list,
-                            unk=negative_event_type,
-                            padding="",
+    event_type_vocab = Vocabulary(tokens=event_types_list,
+                                  unk=negative_event_type,
+                                  padding="",
+                                  special_first=True)
+
+    ASSERT.assertEqual(len(expect_event_types), event_type_vocab.size)
+
+    word_vocab = Vocabulary(tokens=tokens_list,
+                            unk=Vocabulary.UNK,
+                            padding=Vocabulary.PADDING,
                             special_first=True)
 
-    ASSERT.assertEqual(len(expect_event_types), vocabulary.size)
-
+    # 粗糙的测试，size 应该是比10大，具体的没有去文件中数一数
+    ASSERT.assertTrue(word_vocab.size > 10)
