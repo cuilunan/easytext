@@ -25,7 +25,7 @@ from easytext.model import Model
 from easytext.loss import Loss
 from easytext.optimizer import OptimizerFactory
 from easytext.optimizer import LRSchedulerFactory
-from easytext.data.collate import ModelInputs
+from easytext.data.model_collate import ModelInputs
 from easytext.metrics import ModelMetricAdapter
 from easytext.utils.json_util import json2str
 from easytext.utils.nn import cuda_util
@@ -397,10 +397,11 @@ class Trainer:
             # 这种情况，暂时不处理, 如果处理需要重新重构，或者简单实用 isinstance ReduceLROnPlateau 来处理
             # 这里简单实用 isinstance 处理。必须指出，ReduceLROnPlateau 的基类是 object, 这也是多少有些问题。
 
-            if isinstance(self._lr_scheduler, ReduceLROnPlateau):
-                self._lr_scheduler.step(metrics=evaluate_loss, epoch=epoch)
-            else:
-                self._lr_scheduler.step(epoch=epoch)
+            if self._lr_scheduler is not None:
+                if isinstance(self._lr_scheduler, ReduceLROnPlateau):
+                    self._lr_scheduler.step(metrics=evaluate_loss, epoch=epoch)
+                else:
+                    self._lr_scheduler.step(epoch=epoch)
 
             self.save_checkpoint(epoch=epoch)
 

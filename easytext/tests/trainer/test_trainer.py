@@ -13,6 +13,7 @@ Date:    2020/05/29 11:11:00
 import json
 import os
 import shutil
+import logging
 from typing import Iterable, List, Dict, Tuple
 
 import numpy as np
@@ -21,8 +22,8 @@ from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
 
 from easytext.data import Instance
-from easytext.data.collate import ModelInputs
-from easytext.data.collate import Collate
+from easytext.data.model_collate import ModelInputs
+from easytext.data.model_collate import ModelCollate
 from easytext.model import Model
 from easytext.model import Outputs
 from easytext.loss import Loss
@@ -65,7 +66,7 @@ class _DemoDataset(Dataset):
         return self._instances[index]
 
 
-class _DemoCollate(Collate):
+class _DemoCollate(ModelCollate):
     """
     测试用的 collate
     """
@@ -247,7 +248,10 @@ def test_trainer_save_and_load_cpu():
 
 def test_trainer_save_load_gpu():
 
-    cuda_devices = ["cuda:0"]
-    _run_train(cuda_devices=cuda_devices)
+    if torch.cuda.is_available():
+        cuda_devices = ["cuda:0"]
+        _run_train(cuda_devices=cuda_devices)
+    else:
+        logging.warning("由于没有GPU，忽略这个case测试")
 
 

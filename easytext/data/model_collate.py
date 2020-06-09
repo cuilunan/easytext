@@ -39,7 +39,7 @@ class ModelInputs:
         self.labels = labels
 
 
-class Collate:
+class ModelCollate:
     """
     用在对数据处理产出模型的输入数据以及label, 是 torch.utils.data.DataLoader 中的 collate_fn 函数
     """
