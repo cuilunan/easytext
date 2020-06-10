@@ -12,18 +12,26 @@ Date:    2020/06/09 10:12:00
 """
 
 import os
+import logging
 from typing import List
 from pytest import fixture
 from torch.utils.data import DataLoader
 
 from easytext.utils import bio
-from easytext.data import Vocabulary
+from easytext.utils.json_util import json2str
+from easytext.utils import log_util
+from easytext.data import Vocabulary, LabelVocabulary
+from easytext.data.model_collate import ModelInputs
 
 from event import ROOT_PATH
 from event.event_detection_without_tirgger.tests import ASSERT
 from event.event_detection_without_tirgger.data import ACEDataset
 from event.event_detection_without_tirgger.data import EventVocabularyCollate
 from event.event_detection_without_tirgger.data import EventDataset
+from event.event_detection_without_tirgger.data import EventCollate
+
+
+log_util.config()
 
 
 @fixture(scope="class")
@@ -41,10 +49,12 @@ def vocabulary(ace_dataset):
 
     event_types_list: List[List[str]] = list()
     tokens_list: List[List[str]] = list()
+    entity_tags_list: List[List[str]] = list()
 
     for collate_dict in data_loader:
         event_types_list.extend(collate_dict["event_types"])
         tokens_list.extend(collate_dict["tokens"])
+        entity_tags_list.extend(collate_dict["entity_tags"])
 
     negative_event_type = "Negative"
     event_type_vocab = Vocabulary(tokens=event_types_list,
@@ -56,7 +66,11 @@ def vocabulary(ace_dataset):
                             unk=Vocabulary.UNK,
                             padding=Vocabulary.PADDING,
                             special_first=True)
-    return {"event_type_vocab": event_type_vocab, "word_vocab": word_vocab}
+
+    entity_tag_vocab = LabelVocabulary(entity_tags_list, padding=LabelVocabulary.PADDING)
+    return {"event_type_vocab": event_type_vocab,
+            "word_vocab": word_vocab,
+            "entity_tag_vocab": entity_tag_vocab}
 
 
 @fixture(scope="class")
@@ -306,4 +320,37 @@ def test_event_dataset(event_dataset, vocabulary):
             ASSERT.assertListEqual(expect_tokens, tokens)
 
     ASSERT.assertTrue(hit)
+
+
+def test_event_collate(event_dataset, vocabulary):
+    """
+    测试 event collate
+    """
+    event_type_vocab = vocabulary["event_type_vocab"]
+    word_vocab = vocabulary["word_vocab"]
+    entity_tag_vocab = vocabulary["entity_tag_vocab"]
+
+    event_collate = EventCollate(word_vocabulary=word_vocab,
+                                 event_type_vocabulary=event_type_vocab,
+                                 entity_tag_vocabulary=entity_tag_vocab,
+                                 sentence_max_len=512)
+
+    data_loader = DataLoader(dataset=event_dataset, collate_fn=event_collate, batch_size=1)
+
+    for i, batch_instance in enumerate(data_loader):
+        batch_instance: ModelInputs = batch_instance
+        sentence_input = batch_instance.model_inputs["sentence"]
+        ASSERT.assertEqual(1, batch_instance.batch_size)
+        ASSERT.assertEqual(1, sentence_input.size(0))
+
+        ASSERT.assertEqual(2, sentence_input.dim())
+
+        # 粗略的计算长度
+        ASSERT.assertTrue(sentence_input.size(-1) > 5)
+
+        logging.debug(f"Instance: {i}: \n {json2str(batch_instance)}")
+
+
+
+
 

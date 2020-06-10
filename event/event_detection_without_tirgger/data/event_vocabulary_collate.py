@@ -22,5 +22,6 @@ class EventVocabularyCollate:
 
     def __call__(self, instances: Iterable[Instance]) -> Dict["str", List[List[str]]]:
         collate_dict = {"event_types": [instance["event_types"] for instance in instances],
-                        "tokens": [[t.text for t in instance["sentence"]] for instance in instances]}
+                        "tokens": [[t.text for t in instance["sentence"]] for instance in instances],
+                        "entity_tags": [instance["entity_tag"] for instance in instances]}
         return collate_dict

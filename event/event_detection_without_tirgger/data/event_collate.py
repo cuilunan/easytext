@@ -54,6 +54,7 @@ class EventCollate(ModelCollate):
         token_indices_list = list()
         event_type_indices = list()
         entity_tag_indices_list = list()
+        metadatas = list()
         labels: List[int] = None
 
         for instance in instances:
@@ -73,6 +74,7 @@ class EventCollate(ModelCollate):
             for i, entity_tag in enumerate(instance["entity_tag"][0:batch_max_sentence_len]):
                 entity_tag_indices[i] = self._entity_tag_vocab.index(entity_tag)
 
+            metadatas.append(instance["metadata"])
             # label 要单独处理，因为在 predict 的时候，是没有的
             if "label" in instance:
 
@@ -89,7 +91,8 @@ class EventCollate(ModelCollate):
         batch_size = len(instances)
         model_inputs = {"sentence": token_indices_tensor,
                         "entity_tag": entity_tag_indices_tensor,
-                        "event_type": event_type_tensor}
+                        "event_type": event_type_tensor,
+                        "metadata": metadatas}
 
         model_inputs = ModelInputs(batch_size=batch_size,
                                    model_inputs=model_inputs,
