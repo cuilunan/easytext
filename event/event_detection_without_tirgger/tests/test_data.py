@@ -21,7 +21,7 @@ from easytext.utils import bio
 from easytext.utils.json_util import json2str
 from easytext.utils import log_util
 from easytext.data import Vocabulary, LabelVocabulary
-from easytext.data.model_collate import ModelInputs
+from easytext.model import ModelInputs
 
 from event import ROOT_PATH
 from event.event_detection_without_tirgger.tests import ASSERT
@@ -273,7 +273,7 @@ def test_ace_dataset(ace_dataset):
     ]
 
     expect_tags = {(tag["entity-type"], tag["head"]["start"], tag["head"]["end"]) for tag in expect_tags}
-    instance_0_entity_tag = [t.text for t in instance_0["entity_tag"]]
+    instance_0_entity_tag = [t for t in instance_0["entity_tag"]]
     spans = bio.decode_one_sequence_label_to_span(instance_0_entity_tag)
 
     tags = {(span["label"], span["begin"], span["end"]) for span in spans}

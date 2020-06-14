@@ -17,13 +17,27 @@ from typing import Dict
 import torch
 from torch import LongTensor
 from torch import Tensor
-from torch.nn.modules.loss import MSELoss
+from torch.nn import Embedding
+from torch.nn import LSTM
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import torch.nn.functional as F
 
+from easytext.data import Vocabulary, LabelVocabulary
 from easytext.model import Model
+from easytext.model import ModelOutputs
+from easytext.utils.nn import nn_util
 
 
-class EventDetectionWithoutTriggerModel(Model):
+class EventModelOutputs(ModelOutputs):
+    """
+    Event Model 的输出数据
+    """
+
+    def __init__(self, logits: torch.Tensor):
+        super().__init__(logits)
+
+
+class EventModel(Model):
     """
     event detection without trigger
 
@@ -31,72 +45,87 @@ class EventDetectionWithoutTriggerModel(Model):
     """
 
     def __init__(self,
-                 sentence_embedder: TextFieldEmbedder,
-                 entity_tag_embedder: TextFieldEmbedder,
-                 event_type_embedder_1: TokenEmbedder,
-                 event_type_embedder_2: TokenEmbedder,
-                 sentence_encoder: Seq2SeqEncoder,
                  alpha: float,
-                 vocab: Vocabulary,
-                 activate_score: bool = True,
-                 initializer: InitializerApplicator = None,
-                 regularizer: RegularizerApplicator = None):
+                 activate_score: bool,
+                 sentence_vocab: Vocabulary,
+                 sentence_embedding_dim: int,
+                 entity_tag_vocab: Vocabulary,
+                 entity_tag_embedding_dim: int,
+                 event_type_vocab: LabelVocabulary,
+                 event_type_embedding_dim: int,
+                 lstm_hidden_size: int,
+                 lstm_encoder_num_layer: int,
+                 lstm_encoder_droupout: float):
 
-        super().__init__(vocab=vocab, regularizer=regularizer)
-
-        self._sentence_embedder = sentence_embedder
-        self._entity_tag_embedder = entity_tag_embedder
-
-        # event_type_embedder 因为要做attention，所以维度是 sentence_embedder + entity_tag_embedder
-        self._event_type_embedder_1 = event_type_embedder_1
-
-        self._event_type_embedder_2 = event_type_embedder_2
-
-        self._sentence_encoder = sentence_encoder
+        super().__init__()
 
         self._alpha = alpha
-
-        self._loss = MSELoss()
-
-        self._metrics: Dict[str, Metric] = {"accuracy": BooleanAccuracy()}
-        self._f1_metrics: Dict[str, EventDetectionWithoutKeywordF1Measure] = \
-            {"f1_all": EventDetectionWithoutKeywordF1Measure("all")}
-
         self._activate_score = activate_score
-        # for event_type in vocab.get_token_to_index_vocabulary(
-        #         EventDetectionWithoutTriggerDatasetReader.EVENT_TYPE_NAMESPACE):
-        #     logging.debug(f"event type: {event_type}")
-        #     self._f1_metrics[f"f1_{event_type}"] = EventDetectionWithoutKeywordF1Measure(event_type)
+        self._sentence_vocab = sentence_vocab
+        self._sentence_embedder = Embedding(self._sentence_embedder.size,
+                                             embedding_dim=sentence_embedding_dim,
+                                             padding_idx=self._sentence_vocab.padding_index)
 
-        if initializer:
-            initializer(self)
+        self._entity_tag_vocab = entity_tag_vocab
+        self._entity_tag_embedder = Embedding(self._entity_tag_vocab.size,
+                                              embedding_dim=entity_tag_embedding_dim,
+                                              padding_idx=self._entity_tag_vocab.padding_index)
 
-        # debug
-        for name, parameter in self.named_parameters():
-            print(f"parameter: {name}: {parameter}")
+        self._event_type_vocab = event_type_vocab
+        self._event_type_embedder_1 = Embedding(self._entity_tag_vocab.size,
+                                              embedding_dim=event_type_embedding_dim)
+        self._event_type_embedder_2 = Embedding(self._entity_tag_vocab.size,
+                                                embedding_dim=event_type_embedding_dim)
+
+        # lstm 作为encoder
+        self._lstm = LSTM(input_size=(sentence_embedding_dim + entity_tag_embedding_dim),
+                          hidden_size=lstm_hidden_size,
+                          num_layers=lstm_encoder_num_layer,
+                          batch_first=True,
+                          dropout=lstm_encoder_droupout,
+                          bidirectional=False)
+
+    def reset_parameters(self):
+        pass
 
     def forward(self,
-                sentence: Dict[str, LongTensor],
-                entity_tag: Dict[str, LongTensor],
+                sentence: LongTensor,
+                entity_tag: LongTensor,
                 event_type: LongTensor,
-                metadata: Dict = None,
-                label: LongTensor = None) -> Dict[str, torch.Tensor]:
-        output_dict = dict()
+                metadata: Dict = None) -> EventModelOutputs:
+        """
+        模型运行
+        :param sentence: shape: (B, SeqLen), 句子的 index tensor
+        :param entity_tag: shape: (B, SeqLen), 句子的 实体 index tensor
+        :param event_type: shape: (B,), event type 的 tensor
+        :param metadata: metadata 数据，不参与模型运算
+        """
+
+        assert sentence.dim() == 2, f"Sentence 的维度 {sentence.dim()} !=2, 应该是(B, SeqLen)"
 
         # sentence, entity_tag 使用的是同一个 mask
-        mask = get_text_field_mask(sentence).float()
+        mask = nn_util.sequence_mask(sentence,
+                                     self._sentence_vocab.index(self._sentence_vocab.padding))
 
-        # shape: B * SeqLen * InputSize1
+        # shape: B * SeqLen * sentence_embedding_dim
         sentence_embedding = self._sentence_embedder(sentence)
 
-        # shape: B * SeqLen * InputSize2
+        # shape: B * SeqLen * entity_tag_embedding_dim
         entity_tag_embedding = self._entity_tag_embedder(entity_tag)
 
-        # shape: B * SeqLen * InputSize, InputSize = InputSize1 + InputSize2
+        # shape: B * SeqLen * InputSize, InputSize = sentence_embedding_dim + entity_tag_embedding_dim
         sentence_embedding = torch.cat((sentence_embedding, entity_tag_embedding),
                                        dim=-1)
+
+        # 使用 lstm sequence encoder 进行 encoder
+        packed_sentence_embedding = pack_padded_sequence(input=sentence_embedding,
+                             batch_first=True,
+                             enforce_sorted=False)
+        packed_sequence, (h_n, c_n) = self._lstm(packed_sentence_embedding)
+
         # shape: B * SeqLen * InputSize
-        sentence_encoding: Tensor = self._sentence_encoder(sentence_embedding, mask=mask)
+        sentence_encoding: Tensor = pad_packed_sequence(packed_sequence,
+                                                        batch_first=True)
 
         # shape: B * InputSize
         event_type_embedding_1: Tensor = self._event_type_embedder_1(event_type)
@@ -126,9 +155,8 @@ class EventDetectionWithoutTriggerModel(Model):
         # global score
 
         # 获取最后一个hidden, shape: B * INPUT_SIZE
-        hidden_last = get_final_encoder_states(encoder_outputs=sentence_encoding,
-                                               mask=mask,
-                                               bidirectional=self._sentence_encoder.is_bidirectional())
+        hidden_last = h_n
+
         # event type 2, shape: B * INPUT_SIZE
         event_type_embedding_2: Tensor = self._event_type_embedder_2(event_type)
 
@@ -143,12 +171,7 @@ class EventDetectionWithoutTriggerModel(Model):
         if self._activate_score:  # 使用 sigmoid函数激活
             score = torch.sigmoid(score)
 
-        # Shape: B
-        y_pred = torch.gt(score.squeeze(-1), 0.5).long()
-
-        output_dict["label"] = y_pred
-        output_dict["score"] = score
-        output_dict["metadata"] = metadata
+        return ModelOutputs(logits=score)
 
         if label is not None:
             # 计算loss, 注意，这里的loss，后续 follow paper 要修改成带有 beta 的loss.
