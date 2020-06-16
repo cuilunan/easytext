@@ -80,7 +80,8 @@ class ModelMetricAdapter:
         在每一个 batch 中 计算metric
         :param model_outputs:
         :param golden_labels:
-        :return: 当前batch下的 metric 字典值
+        :return: 当前batch下的 metric 字典值, 以及 Model Target Metric.
+        Model Target Metric 的含义是用来对该模型的唯一评判指标
         """
         raise NotImplementedError()
 
@@ -96,10 +97,10 @@ class ModelMetricAdapter:
         """
         raise NotImplementedError()
 
-    def reset(self) -> "Metric":
+    def reset(self) -> "ModelMetricAdapter":
         """
         所有数据重置, 一般是在每一个 epoch 的开始 做这个操作，将所有数据清零。
-        :return:
+        :return: self
         """
         raise NotImplementedError()
 

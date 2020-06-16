@@ -20,7 +20,6 @@ from torch import Tensor
 from torch.nn import Embedding
 from torch.nn import LSTM
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-import torch.nn.functional as F
 
 from easytext.data import Vocabulary, LabelVocabulary
 from easytext.model import Model
@@ -33,8 +32,9 @@ class EventModelOutputs(ModelOutputs):
     Event Model 的输出数据
     """
 
-    def __init__(self, logits: torch.Tensor):
+    def __init__(self, logits: torch.Tensor, event_type: torch.LongTensor):
         super().__init__(logits)
+        self.event_type = event_type
 
 
 class EventModel(Model):
@@ -171,107 +171,5 @@ class EventModel(Model):
         if self._activate_score:  # 使用 sigmoid函数激活
             score = torch.sigmoid(score)
 
-        return ModelOutputs(logits=score)
+        return EventModelOutputs(logits=score, event_type=event_type)
 
-        if label is not None:
-            # 计算loss, 注意，这里的loss，后续 follow paper 要修改成带有 beta 的loss.
-            loss_ok = self._loss(score.squeeze(-1), label.float())
-            loss_mse_ok = F.mse_loss(score.squeeze(-1), label.float())
-
-            # 下面的代码 因为维度不一致，会导致无法收敛, 这个问题需要查看
-            loss_no = self._loss(score, label.float())
-            loss_mse_no = F.mse_loss(score, label.float())
-
-            loss = loss_ok
-
-            logging.info(f"score: {score}\nlabel: {label}\n")
-            logging.info(f"\nloss_ok: {loss_ok}, loss_mse_ok: {loss_mse_ok}\n"
-                         f"loss_no: {loss_no}, loss_mse_no: {loss_mse_no}\n")
-
-            output_dict["loss"] = loss
-
-            for _, metric in self._metrics.items():
-                metric(y_pred, label)
-
-            y_pred_list = y_pred.tolist()
-            label_list = label.tolist()
-            event_type_list = event_type.tolist()
-
-            logging.debug("-" * 80)
-            for yy, ll, ee in zip(y_pred_list, label_list, event_type_list):
-                if ll == 1:
-                    ee = self.vocab.get_token_from_index(ee,
-                                                         namespace=EventDetectionWithoutTriggerDatasetReader.EVENT_TYPE_NAMESPACE)
-                    logging.debug(f"{ee}:[{yy},{ll}]")
-            logging.debug("+" * 80)
-
-            # 计算 f1 metric
-            for _, f1_metric in self._f1_metrics.items():
-                f1_mask = self.mask_for_f1(f1_metric.event_type, event_type)
-                f1_metric(y_pred, label, f1_mask)
-
-        return output_dict
-
-    def mask_for_f1(self, target_event_type: str, event_types: LongTensor) -> LongTensor:
-        """
-        通过 target event type 来计算 mask
-        :param target_event_type:
-        :param event_types:
-        :return: 某个 target event type的mask
-        """
-        if target_event_type == "all":
-            negative_event_index = self.vocab.get_token_index(
-                NEGATIVE_EVENT_TYPE,
-                EventDetectionWithoutTriggerDatasetReader.EVENT_TYPE_NAMESPACE)
-
-            negative = torch.full_like(event_types, negative_event_index)
-
-            # 不是 negative 的保留, negative mask 成 0
-            mask = torch.ne(negative, event_types)
-        else:
-            target_event_index = self.vocab.get_token_index(
-                target_event_type,
-                EventDetectionWithoutTriggerDatasetReader.EVENT_TYPE_NAMESPACE)
-            target_event = torch.full_like(event_types, target_event_index)
-
-            # target event mask, 与 target event type 一致的保留
-            mask = torch.eq(target_event, event_types)
-        return mask.long()
-
-    def _f1_metric(self,
-                   target_event_type: str,
-                   predictions: LongTensor,
-                   golden_labels: LongTensor,
-                   event_types: LongTensor):
-        """
-        计算 target event type的f1
-        :param target_event_type: 某个event type.  target_event_type="all"，说明是计算全部的f1.
-        :param predictions: 预测结果
-        :param golden_labels: golden labels
-        :param event_types: 事件类型tensor
-        :return:
-        """
-        mask = self.mask_for_f1(target_event_type=target_event_type,
-                                event_types=event_types)
-
-        f1_measure = self._f1_metrics[target_event_type]
-
-        return f1_measure(predictions=predictions, gold_labels=golden_labels, mask=mask)
-
-    def get_metrics(self, reset: bool = False) -> Dict[str, float]:
-        """
-        获取metrics结果
-        :param reset:
-        :return:
-        """
-
-        metrics = {name: metric.get_metric(reset) for name, metric in self._metrics.items()}
-
-        for name, f1_metric in self._f1_metrics.items():
-            f1_value_dict: Dict = f1_metric.get_metric(reset)
-            metrics.update(f1_value_dict)
-        return metrics
-
-    def decode(self, output_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-        """解码"""
-        return output_dict
