@@ -16,7 +16,6 @@ import shutil
 import logging
 from typing import Iterable, List, Dict, Tuple
 
-import numpy as np
 import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
@@ -25,7 +24,7 @@ from easytext.data import Instance
 from easytext.data.model_collate import ModelInputs
 from easytext.data.model_collate import ModelCollate
 from easytext.model import Model
-from easytext.model import Outputs
+from easytext.model import ModelOutputs
 from easytext.loss import Loss
 from easytext.optimizer import OptimizerFactory
 from easytext.trainer import Trainer
@@ -102,7 +101,7 @@ class _DemoCollate(ModelCollate):
         return model_inputs
 
 
-class _DemoOutputs(Outputs):
+class _DemoOutputs(ModelOutputs):
 
     def __init__(self, logits: torch.Tensor):
         super().__init__(logits=logits)
@@ -165,7 +164,7 @@ class _DemoLoss(Loss):
         super().__init__()
         self._loss = torch.nn.CrossEntropyLoss()
 
-    def __call__(self, model_outputs: Outputs, golden_label: torch.Tensor) -> torch.Tensor:
+    def __call__(self, model_outputs: ModelOutputs, golden_label: torch.Tensor) -> torch.Tensor:
         model_outputs: _DemoOutputs = model_outputs
 
         return self._loss(model_outputs.logits, golden_label)
