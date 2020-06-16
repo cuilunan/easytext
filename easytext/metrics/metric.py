@@ -16,7 +16,7 @@ from typing import List, Dict, Tuple
 import torch
 from torch import Tensor
 
-from easytext.model import Outputs
+from easytext.model import ModelOutputs
 
 
 class Metric:
@@ -74,7 +74,7 @@ class ModelMetricAdapter:
     """
 
     def __call__(self,
-                 model_outputs: Outputs,
+                 model_outputs: ModelOutputs,
                  golden_labels: Tensor) -> Tuple[Dict, ModelTargetMetric]:
         """
         在每一个 batch 中 计算metric
