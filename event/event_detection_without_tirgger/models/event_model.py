@@ -51,7 +51,7 @@ class EventModel(Model):
                  sentence_embedding_dim: int,
                  entity_tag_vocab: Vocabulary,
                  entity_tag_embedding_dim: int,
-                 event_type_vocab: LabelVocabulary,
+                 event_type_vocab: Vocabulary,
                  event_type_embedding_dim: int,
                  lstm_hidden_size: int,
                  lstm_encoder_num_layer: int,

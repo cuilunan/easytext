@@ -5,10 +5,17 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-loss
+训练器
 
 Authors: panxu(panxu@baidu.com)
-Date:    2020/06/12 17:07:00
+Date:    2020/06/17 18:30:00
 """
 
-from .event_loss import EventLoss
+from easytext.trainer import Trainer
+
+
+class EventTrainer(Trainer):
+    """
+    训练器
+    """
+

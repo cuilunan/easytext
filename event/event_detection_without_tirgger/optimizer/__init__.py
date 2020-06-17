@@ -5,10 +5,10 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-loss
+优化器
 
 Authors: panxu(panxu@baidu.com)
-Date:    2020/06/12 17:07:00
+Date:    2020/06/17 22:20:00
 """
 
-from .event_loss import EventLoss
+from .optimizer_factory import EventOptimizerFactory

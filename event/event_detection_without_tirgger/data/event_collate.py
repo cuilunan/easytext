@@ -21,7 +21,7 @@ from easytext.data.model_collate import ModelCollate, ModelInputs
 
 class EventCollate(ModelCollate):
     """
-    对事件的数据进行 index padding等操作
+    对事件的数据进行 index padding等操作，生成训练样本，对应的是 event_dataset.EventDataset
     """
 
     def __init__(self,

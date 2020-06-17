@@ -17,7 +17,7 @@ from easytext.data import Instance
 
 class EventVocabularyCollate:
     """
-    用来计算 ACE Event
+    计算词汇表，对应的 dataset 是: ace_dataset.ACEDataset
     """
 
     def __call__(self, instances: Iterable[Instance]) -> Dict["str", List[List[str]]]:
