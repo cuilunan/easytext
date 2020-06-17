@@ -59,6 +59,7 @@ class EventF1MetricAdapter(ModelMetricAdapter):
             self._event_type_f1[event_type_vocabulary.token(index)] = LabelF1Metric(labels=[1],
                                                                                     label_vocabulary=None)
         self._event_type_f1[EventF1MetricAdapter.__OVERALL] = LabelF1Metric(labels=[1], label_vocabulary=None)
+        self._event_type_vocabulary = event_type_vocabulary
 
     def __call__(self,
                  model_outputs: EventModelOutputs,
@@ -80,7 +81,8 @@ class EventF1MetricAdapter(ModelMetricAdapter):
             if event_type == EventF1MetricAdapter.__OVERALL:
                 mask = None
             else:
-                mask = (event_type_indices == event_type).long()
+                event_type_index = self._event_type_vocabulary.index(event_type)
+                mask = (event_type_indices == event_type_index).long()
             event_type_metric = f1_metric(predictions=predictions, gold_labels=golden_labels, mask=mask)
 
             event_type_metric = EventF1MetricAdapter._event_metric_from(event_type,

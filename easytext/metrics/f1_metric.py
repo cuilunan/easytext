@@ -101,9 +101,9 @@ class F1Metric(Metric):
         all_metrics = {}
 
         for tag in all_tags:
-            precision, recall, f1_measure = self._compute_metrics(self._true_positives[tag],
-                                                                  self._false_positives[tag],
-                                                                  self._false_negatives[tag])
+            precision, recall, f1_measure = self._compute_metrics(true_positives[tag],
+                                                                  false_positives[tag],
+                                                                  false_negatives[tag])
             precision_key = f"{F1Metric.PRECISION}-{tag}"
             recall_key = f"{F1Metric.RECALL}-{tag}"
             f1_key = f"{F1Metric.F1}-{tag}"
@@ -112,9 +112,9 @@ class F1Metric(Metric):
             all_metrics[f1_key] = f1_measure
 
         # Compute the precision, recall and f1 for overall
-        precision, recall, f1_measure = self._compute_metrics(sum(self._true_positives.values()),
-                                                              sum(self._false_positives.values()),
-                                                              sum(self._false_negatives.values()))
+        precision, recall, f1_measure = self._compute_metrics(sum(true_positives.values()),
+                                                              sum(false_positives.values()),
+                                                              sum(false_negatives.values()))
         all_metrics[F1Metric.PRECISION_OVERALL] = precision
         all_metrics[F1Metric.RECALL_OVERALL] = recall
         all_metrics[F1Metric.F1_OVERALL] = f1_measure
