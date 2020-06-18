@@ -29,7 +29,13 @@ class EventLoss(Loss):
     def __call__(self, model_outputs: ModelOutputs, golden_label: torch.Tensor) -> torch.Tensor:
 
         # 计算loss, 注意，这里的loss，后续 follow paper 要修改成带有 beta 的loss.
-        loss = self._loss(model_outputs.logits.squeeze(-1), golden_label.float())
+        logits = model_outputs.logits
+
+        assert logits.dim() == 1, f"logits dim: {logits.dim()} != 1, 应该是 (B,)"
+        assert logits.shape, golden_label.shape
+
+        loss = self._loss(logits, golden_label.float())
+
         return loss
 
 

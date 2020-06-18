@@ -262,9 +262,9 @@ class LabelVocabulary(Vocabulary):
                          max_size=None)
 
     @property
-    def size(self):
+    def label_size(self):
         """
-        实际的 label 数量，不包含 padding. 如果需要获得包含 padding 的长度，请使用 len(LabelVocabulary)
+        实际的 label 数量，不包含 padding. 如果需要获得包含 padding 的长度，请使用 size 或者 len(LabelVocabulary)
         :return: label 数量
         """
 

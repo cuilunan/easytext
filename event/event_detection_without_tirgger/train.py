@@ -113,3 +113,14 @@ class Train:
 
         trainer.train(train_data_loader=train_data_loader,
                       validation_data_loader=validation_data_loader)
+
+
+if __name__ == '__main__':
+
+    config = {
+        "serialize_dir": "/Users/panxu/Serialize/event_detection_without_tirgger",
+        "train_dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/event/event_detection_without_tirgger/tests/training_data_sample.txt",
+        "validation_dataset_file_path": "/Users/panxu/MyProjects/github/easytext/data/event/event_detection_without_tirgger/tests/training_data_sample.txt"
+    }
+
+    Train()(config=config)
