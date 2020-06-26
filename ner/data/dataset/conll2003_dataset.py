@@ -12,8 +12,13 @@ Date:    2020/06/26 12:16:00
 """
 import logging
 
+from typing import List
 import itertools
 from torch.utils.data import Dataset
+
+from easytext.data import Instance
+from easytext.data.tokenizer import Token
+from easytext.data.tokenizer import EnTokenizer
 
 
 class Conll2003Dataset(Dataset):
@@ -28,29 +33,42 @@ class Conll2003Dataset(Dataset):
         """
         super().__init__()
 
+        self._instances: List[Instance] = list()
+
+        tokenizer = EnTokenizer(is_remove_invalidate_char=False)
+
         logging.info(f"Begin read conll2003 dataset: {dataset_file_path}")
 
         with open(dataset_file_path, encoding="utf-8") as data_file:
 
-            # Group into alternative divider / sentence chunks.
-            for is_divider, lines in itertools.groupby(data_file, _is_divider):
-                # Ignore the divider chunks, so that `lines` corresponds to the words
-                # of a single sentence.
+            # 两个 分隔行 之间的是一个样本
+            for is_divider, lines in itertools.groupby(data_file, Conll2003Dataset._is_divider):
+
                 if not is_divider:
                     fields = [line.strip().split() for line in lines]
-                    # unzipping trick returns tuples, but our Fields need lists
-                    fields = [list(field) for field in zip(*fields)]
-                    tokens_, pos_tags, chunk_tags, ner_tags = fields
-                    # TextField requires ``Token`` objects
-                    tokens = [Token(token) for token in tokens_]
 
-                    yield self.text_to_instance(tokens, pos_tags, chunk_tags, ner_tags)
+                    fields = [list(field) for field in zip(*fields)]
+                    tokens_, pos_tags, chunk_tags, labels = fields
+
+                    text = " ".join(tokens_)
+
+                    tokens = tokenizer.tokenize(text)
+
+                    assert len(tokens) != len(labels)
+                    instance = Instance()
+                    instance["metadata"] = {"text": text,
+                                            "label": labels}
+                    instance["tokens"] = tokens
+                    instance["lables"] = labels
+
+
 
     @staticmethod
     def _is_divider(line: str) -> bool:
         """
-        判断该行是否是 分割的。包括两种情况: 1. 空行 2. "-DOCSTART-" 这两种否是分割的
+        判断该行是否是 分隔行。包括两种情况: 1. 空行 2. "-DOCSTART-" 这两种否是分隔行
         :param line: 行的内容
+        :return: True: 是分隔行; False: 不是分隔行
         """
 
         if line.strip() != "":
