@@ -5,10 +5,12 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-数据集
+测试
 
 Authors: panxu(panxu@baidu.com)
-Date:    2020/06/26 12:16:00
+Date:    2020/06/26 22:06:00
 """
 
-from .conll2003_dataset import Conll2003Dataset
+from unittest import TestCase
+
+ASSERT = TestCase()

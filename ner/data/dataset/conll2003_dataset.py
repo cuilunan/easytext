@@ -19,6 +19,7 @@ from torch.utils.data import Dataset
 from easytext.data import Instance
 from easytext.data.tokenizer import Token
 from easytext.data.tokenizer import EnTokenizer
+from easytext.utils import bio as BIO
 
 
 class Conll2003Dataset(Dataset):
@@ -45,23 +46,29 @@ class Conll2003Dataset(Dataset):
             for is_divider, lines in itertools.groupby(data_file, Conll2003Dataset._is_divider):
 
                 if not is_divider:
+
+                    lines = [_ for _ in lines]
                     fields = [line.strip().split() for line in lines]
 
                     fields = [list(field) for field in zip(*fields)]
-                    tokens_, pos_tags, chunk_tags, labels = fields
+                    tokens_, pos_tags, chunk_tags, ibo1_labels = fields
 
                     text = " ".join(tokens_)
 
                     tokens = tokenizer.tokenize(text)
 
-                    assert len(tokens) != len(labels)
+                    assert len(tokens) == len(ibo1_labels), \
+                        f"token 长度: {len(tokens)} 与 标签长度: {len(ibo1_labels)} 不匹配"
+
+                    bio_labels = BIO.ibo1_to_bio(ibo1_labels)
+
                     instance = Instance()
                     instance["metadata"] = {"text": text,
-                                            "label": labels}
+                                            "sequence_label": bio_labels}
                     instance["tokens"] = tokens
-                    instance["lables"] = labels
+                    instance["sequence_label"] = bio_labels
 
-
+                    self._instances.append(instance)
 
     @staticmethod
     def _is_divider(line: str) -> bool:
@@ -73,17 +80,15 @@ class Conll2003Dataset(Dataset):
 
         if line.strip() != "":
             first_token = line.split()[0]
-            if first_token == "-DOCSTART-":
-                return True
+            if first_token != "-DOCSTART-":
+                return False
 
-        return False
+        return True
 
-    def __getitem__(self, index: int) -> T_co:
-        return super().__getitem__(index)
+    def __getitem__(self, index: int) -> Instance:
+        return self._instances[index]
 
     def __len__(self) -> int:
-        return super().__len__()
+        return len(self._instances)
 
-    def __add__(self, other: T_co) -> 'ConcatDataset[T_co]':
-        return super().__add__(other)
 
