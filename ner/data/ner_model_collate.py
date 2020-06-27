@@ -36,6 +36,7 @@ class NerModelCollate(ModelCollate):
 
         batch_token_indices = list()
         batch_sequence_label_indices = list()
+        batch_metadatas = list()
 
         batch_max_len = 0
         batch_size = 0
@@ -64,12 +65,15 @@ class NerModelCollate(ModelCollate):
 
             batch_sequence_label_indices.append(sequence_label_indices)
 
+            batch_metadatas.append(instance["metadata"])
+
         batch_token_indices = torch.tensor(batch_token_indices, dtype=torch.long)
         batch_sequence_label_indices = torch.tensor(batch_sequence_label_indices, dtype=torch.long)
 
         model_inputs = ModelInputs(batch_size=batch_size,
                                    model_inputs={
-                                       "tokens": batch_token_indices
+                                       "tokens": batch_token_indices,
+                                       "metadata": batch_metadatas
                                    },
                                    labels=batch_sequence_label_indices)
         return model_inputs
