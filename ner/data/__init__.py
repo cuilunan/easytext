@@ -5,8 +5,10 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-brief
 
 Authors: panxu(panxu@baidu.com)
 Date:    2020/06/25 21:11:00
 """
+
+from .vocabulary_collate import VocabularyCollate
+from .ner_model_collate import NerModelCollate
