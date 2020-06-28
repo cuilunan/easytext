@@ -5,11 +5,10 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-model
+metric
 
 Authors: PanXu
-Date:    2020/06/27 17:06:00
+Date:    2020/06/27 20:48:00
 """
 
-from .ner_model_outputs import NerModelOutputs
-from .ner_v1 import NerV1
+from .ner_metric import NerModelMetricAdapter

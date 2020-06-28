@@ -285,13 +285,14 @@ def span_intersection(span_list1: List[Dict],
 
 def ibo1_to_bio(sequence_label: List[str]) -> List[str]:
     """
-    ibo1 的序列标签格式转换成 bio 格式。ibo1格式是指 "I-Label" 作为一个序列的开始, 直到遇到 O。
+    IBO1 的序列标签格式转换成 bio 格式。ibo1格式是指 "I-Label" 作为一个序列的开始, 直到遇到 O。
     "B-Label" 是指连续 "I-Label" 是多个 span 的时候，除了第一个span，其他都是 "B-Label"。
+    另外 BIO 的格式也兼容，比如 "B-Lable", "I-Label" 这种BIO格式也是正确的。
     例子如下:
-    "I-Label1 I-Label1 O I-Label1 I-Label1 I-Label2 I-Label2 O I-Label1 I-Label1 B-Label1 I-Label1"
+    "I-Label1 I-Label1 O I-Label1 I-Label1 I-Label2 I-Label2 O I-Label1 I-Label1 B-Label1 I-Label1 O B-Label I-Label"
 
     这里包含的spans:
-    "[I-Label1 I-Label1] O [I-Label1 I-Label1] [I-Label2 I-Label2] O [I-Label1 I-Label1] [B-Label1 I-Label1]"
+    "[I-Label1 I-Label1] O [I-Label1 I-Label1] [I-Label2 I-Label2] O [I-Label1 I-Label1] [B-Label1 I-Label1] O [B-Label I-Label"]
 
     :param sequence_label:
     :return:
@@ -315,7 +316,9 @@ def ibo1_to_bio(sequence_label: List[str]) -> List[str]:
                 b_label = "B" + label[1:]
                 bio.append(b_label)
             elif label[0] == "B":
-                raise RuntimeError(f"发生错误在 第{i} 个位置是 B, {sequence_label}")
+                # 这种情况是 BIO 标注，认为是对的
+                state = span_state
+                bio.append(label)
         elif state == span_state:
             if label == "O":
                 state = idel_state

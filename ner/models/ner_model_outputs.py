@@ -19,6 +19,7 @@ class NerModelOutputs(ModelOutputs):
     Ner Model Outputs
     """
 
-    def __init__(self, logits: torch.Tensor):
+    def __init__(self, logits: torch.Tensor, mask: torch.Tensor):
 
         super().__init__(logits=logits)
+        self.mask = mask

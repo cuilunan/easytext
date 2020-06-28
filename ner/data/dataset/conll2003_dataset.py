@@ -55,6 +55,7 @@ class Conll2003Dataset(Dataset):
 
                     text = " ".join(tokens_)
 
+                    logging.debug(f"text: {text}")
                     tokens = tokenizer.tokenize(text)
 
                     assert len(tokens) == len(ibo1_labels), \

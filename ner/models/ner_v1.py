@@ -107,6 +107,7 @@ class NerV1(Model):
 
         assert (batch_size, seq_len, self.label_vocabulary.label_size) == logits.size()
 
-        model_outputs = NerModelOutputs(logits=logits)
+        model_outputs = NerModelOutputs(logits=logits,
+                                        mask=mask_long)
 
         return model_outputs
