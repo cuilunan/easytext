@@ -12,7 +12,9 @@
 Authors: PanXu
 Date:    2020/06/27 17:08:00
 """
+import logging
 from typing import Union, Dict
+
 import torch
 from torch import Tensor
 from torch.nn import LSTM, Linear, Embedding
@@ -99,9 +101,11 @@ class NerV1(Model):
                                                            padding_value=0.0)
 
         # 校验 length 一致性
+        # 转换到相应的device
+        pad_seqence_length = pad_seqence_length.to(sequence_lengths.device)
         assert (sequence_lengths == pad_seqence_length).long().sum() == batch_size
 
-        assert (batch_size, seq_len, 2 * self.hidden_size), encoding.size()
+        assert (batch_size, seq_len, 2 * self.hidden_size) == encoding.size()
 
         logits = self.liner(encoding)
 
