@@ -34,13 +34,14 @@ def fill(sequence_label: List[str], begin_index: int, end_index: int, tag: str) 
     sequence_label[begin_index] = f"B-{tag}"
 
 
-def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor, vocabulary: LabelVocabulary) -> List[str]:
+def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor,
+                                        vocabulary: LabelVocabulary) -> Tuple[List[str], List[int]]:
     """
     对 输出 sequence logits 进行解码, 是仅仅一个 sequence 进行解码，而不是 batch sequence 进行解码。
     batch sequence 解码需要进行循环
     :param sequence_logits: shape: (seq_len, label_num),
     是 mask 之后的有效 sequence，而不是包含 mask 的 sequecne logits.
-    :return: sequence label, B, I, O 的list
+    :return: sequence label, B, I, O 的list 以及 label 对应的 index list
     """
 
     if len(sequence_logits.shape) != 2:
@@ -56,6 +57,7 @@ def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor, vocabular
     sorted_sequence_indices = torch.argsort(sequence_logits, dim=-1, descending=True)
 
     sequence_label = list()
+    sequence_label_indices = list()
 
     for i in range(sequence_length):
 
@@ -71,10 +73,12 @@ def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor, vocabular
                 if label[0] == "O":
 
                     sequence_label.append(label)
+                    sequence_label_indices.append(index)
                     state = idel_state
                     break
                 elif label[0] == "B":
                     sequence_label.append(label)
+                    sequence_label_indices.append(index)
                     state = span_state
                     break
                 else:
@@ -88,14 +92,17 @@ def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor, vocabular
 
                 if label[0] == "B":
                     sequence_label.append(label)
+                    sequence_label_indices.append(index)
                     state = span_state
                     break
                 elif label[0] == "O":
                     sequence_label.append(label)
+                    sequence_label_indices.append(index)
                     state = idel_state
                     break
                 elif label[0] == "I":
                     sequence_label.append(label)
+                    sequence_label_indices.append(index)
                     state = span_state
                     break
                 else:
@@ -103,7 +110,7 @@ def decode_one_sequence_logits_to_label(sequence_logits: torch.Tensor, vocabular
         else:
             raise RuntimeError(f"state is error: {state}")
 
-    return sequence_label
+    return sequence_label, sequence_label_indices
 
 
 def decode_one_sequence_label_to_span(sequence_label: List[str]) -> List[Dict]:
@@ -211,7 +218,7 @@ def decode(batch_sequence_logits: torch.Tensor,
 
     spans = list()
     for i in range(batch):
-        sequence_label = decode_one_sequence_logits_to_label(
+        sequence_label, _ = decode_one_sequence_logits_to_label(
             sequence_logits=batch_sequence_logits[i, :sequence_length[i]],
             vocabulary=vocabulary)
         sequence_span = decode_one_sequence_label_to_span(sequence_label)

@@ -61,7 +61,7 @@ class SequenceMaxLabelIndexDecoder(LabelIndexDecoder):
 
         batch_indices = list()
         for i in range(batch):
-            sequence_label_indices = BIO.decode_one_sequence_logits_to_label(
+            sequence_labels, sequence_label_indices = BIO.decode_one_sequence_logits_to_label(
                 sequence_logits=logits[i, :sequence_length[i]],
                 vocabulary=self._label_vocabulary)
 

@@ -78,10 +78,13 @@ def test_decode_one_sequence_logits_to_label():
     ASSERT.assertEqual(2, o_index)
 
     for sequence_logits, expect in zip(sequence_logits_list, expect_list):
-        sequence_label = BIO.decode_one_sequence_logits_to_label(sequence_logits=sequence_logits,
-                                                                 vocabulary=vocabulary)
+        sequence_label, sequence_label_indices = BIO.decode_one_sequence_logits_to_label(
+            sequence_logits=sequence_logits,
+            vocabulary=vocabulary)
 
         ASSERT.assertListEqual(sequence_label, expect)
+        expect_indices = [vocabulary.index(label) for label in expect]
+        ASSERT.assertListEqual(sequence_label_indices, expect_indices)
 
 
 def test_decode_one_sequence_logits_to_label_abnormal():
@@ -105,22 +108,24 @@ def test_decode_one_sequence_logits_to_label_abnormal():
     o_index = vocabulary.index("O")
     ASSERT.assertEqual(2, o_index)
 
-    sequence_label = BIO.decode_one_sequence_logits_to_label(sequence_logits=sequence_logits,
+    sequence_label, sequence_label_indices = BIO.decode_one_sequence_logits_to_label(sequence_logits=sequence_logits,
                                                              vocabulary=vocabulary)
 
     expect = ["O", "B-T", "I-T"]
-
-    ASSERT.assertListEqual(sequence_label, expect)
+    expect_indices = [vocabulary.index(label) for label in expect]
+    ASSERT.assertListEqual(expect, sequence_label)
+    ASSERT.assertListEqual(expect_indices, sequence_label_indices)
 
     # argmax 解码是 I I I 经过修订后是: O O B
     sequence_logits = torch.tensor([[0.2, 0.5, 0.4], [0.2, 0.9, 0.3], [0.2, 0.3, 0.1]],
                                    dtype=torch.float)
 
-    sequence_label = BIO.decode_one_sequence_logits_to_label(sequence_logits=sequence_logits,
+    sequence_label, sequence_label_indices = BIO.decode_one_sequence_logits_to_label(sequence_logits=sequence_logits,
                                                              vocabulary=vocabulary)
     expect = ["O", "O", "B-T"]
-
-    ASSERT.assertListEqual(sequence_label, expect)
+    expect_indices = [vocabulary.index(label) for label in expect]
+    ASSERT.assertListEqual(expect, sequence_label)
+    ASSERT.assertListEqual(expect_indices, sequence_label_indices)
 
 
 def test_decode_one_sequence_label_to_span():
