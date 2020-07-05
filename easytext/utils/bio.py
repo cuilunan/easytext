@@ -198,7 +198,7 @@ def decode(batch_sequence_logits: torch.Tensor,
 
     if (mask is not None) and (mask.dim() != 2):
         raise RuntimeError(f"mask shape 错误, 应该是 (B, seq_len), "
-                           f"而现在是 {batch_sequence_logits.shape}")
+                           f"而现在是 {mask.shape}")
 
     batch = batch_sequence_logits.size(0)
 
@@ -221,7 +221,7 @@ def decode(batch_sequence_logits: torch.Tensor,
 
 
 def decode_label_index_to_span(batch_sequence_label_index: torch.Tensor,
-                               mask: torch.LongTensor,
+                               mask: torch.ByteTensor,
                                vocabulary: LabelVocabulary) -> List[List[Dict]]:
     """
     将 label index 解码 成span
