@@ -19,3 +19,4 @@ from .label_decoder.sequence_label_decoder import SequenceLabelDecoder
 from .label_index_decoder.label_index_decoder import LabelIndexDecoder
 from .label_index_decoder.crf_label_index_decoder import CRFLabelIndexDecoder
 from .label_index_decoder.sequence_max_label_index_decoder import SequenceMaxLabelIndexDecoder
+from .label_index_decoder.max_label_index_decoder import MaxLabelIndexDecoder

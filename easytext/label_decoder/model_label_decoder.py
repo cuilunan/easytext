@@ -24,10 +24,7 @@ class ModelLabelDecoder:
     2. 在 metric 中使用 decode_label_index 将 logits 转化成 label index 用来进行 metric 计算
     """
 
-    def __init__(self, label_vocabulary: LabelVocabulary):
-        self._label_vocabulary = label_vocabulary
-
-    def decode_label_index(self, model_outputs: ModelOutputs) -> Tuple[torch.LongTensor, torch.FloatTensor]:
+    def decode_label_index(self, model_outputs: ModelOutputs) -> torch.LongTensor:
         """
         将模型输出解码成 index
         :param model_outputs: 模型输出
@@ -35,9 +32,9 @@ class ModelLabelDecoder:
         """
         raise NotImplementedError()
 
-    def decode_label(self, model_outputs: ModelOutputs, label_indices) -> List:
+    def decode_label(self, model_outputs: ModelOutputs, label_indices: torch.LongTensor) -> List:
         """
-        将 label index 解码成最终目标结果, 会使用到 self._label_vocabulary, 对 label index 进行实际的转换。
+        将 label index 解码成最终目标结果, 会使用到 label_vocabulary, 对 label index 进行实际的转换。
         对于分类来说, 假设 label index = [1, 5, 7], 返回结果是 labels=["军事", "政治", "经济"];
         对于其他任务来说也同样，返回的是用户能读懂的结果。
         :param model_outputs: 模型输出
