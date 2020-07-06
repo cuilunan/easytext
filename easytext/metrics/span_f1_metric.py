@@ -66,14 +66,16 @@ class SpanF1Metric(F1Metric):
         :return: 当前的 metric 计算字典结果.
         """
 
-        if prediction_labels.dim() != 3:
-            raise RuntimeError(f"predictions shape 应该是: (B, SeqLen, num_label), 现在是:{prediction_labels.size()}")
+        if prediction_labels.dim() != 2:
+            raise RuntimeError(f"prediction_labels shape 应该是: (B, SeqLen), 现在是:{prediction_labels.size()}")
         if gold_labels.dim() != 2:
             raise RuntimeError(f"gold_labels shape 应该是: (B, SeqLen), 现在是:{gold_labels.size()}")
 
         if mask is not None:
             if mask.dim() != 2:
                 raise RuntimeError(f"mask shape 应该是: (B, SeqLen), 现在是:{mask.size()}")
+
+
 
         # 转换到 cpu 进行计算
         prediction_labels, gold_labels = prediction_labels.detach().cpu(), gold_labels.detach().cpu()
@@ -83,6 +85,12 @@ class SpanF1Metric(F1Metric):
         else:
             mask = torch.ones(size=(prediction_labels.size(0), prediction_labels.size(1)),
                               dtype=torch.long).cpu()
+
+        assert prediction_labels.size() == gold_labels.size(), \
+            f"prediction_labels.size: {prediction_labels.size()} 与 gold_labels.size: {gold_labels.size()} 不匹配!"
+
+        assert prediction_labels.size() == mask.size(), \
+            f"prediction_labels.size: {prediction_labels.size()} 与 mask.size: {mask.size()} 不匹配!"
 
         bool_mask = (mask != 0)
 
