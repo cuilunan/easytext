@@ -44,6 +44,6 @@ class NerCRFLoss(Loss):
         mask = model_outputs.mask
         assert mask.dim() == 2, f"mask.dim() != 2, 应该是 (batch_size, seq_len)"
 
-        return crf(inputs=logits,
-                   tags=golden_label,
-                   mask=mask)
+        return -crf(inputs=logits,
+                    tags=golden_label,
+                    mask=mask)

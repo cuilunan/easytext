@@ -32,10 +32,10 @@ from .ner_model_outputs import NerModelOutputs
 
 class NerV3(Model):
     """
-    Ner v1 版本，bilstm + crf
+    Ner v3 版本，glove6B.100d + bilstm + crf
     """
 
-    DESTCRIPTION = "bilstm + crf"
+    DESTCRIPTION = "glove6B.100d + bilstm + crf"
 
     def __init__(self,
                  token_vocabulary: Union[Vocabulary, PretrainedVocabulary],

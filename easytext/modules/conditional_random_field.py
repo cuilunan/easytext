@@ -120,6 +120,8 @@ class ConditionalRandomField(torch.nn.Module):
         """
         batch_size, sequence_length, _ = logits.data.shape
 
+        tags = tags * mask  # 使得 padding index = 0, 否则，在 transition 中，会出现越界情况
+
         # Transpose batch size and sequence dimensions:
         logits = logits.transpose(0, 1).contiguous()
         mask = mask.float().transpose(0, 1).contiguous()
@@ -173,7 +175,7 @@ class ConditionalRandomField(torch.nn.Module):
         """
         Computes the log likelihood.
         """
-        # pylint: disable=arguments-differ
+
         if mask is None:
             mask = torch.ones(*tags.size(), dtype=torch.long)
 

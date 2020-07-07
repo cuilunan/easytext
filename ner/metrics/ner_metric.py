@@ -18,9 +18,9 @@ from easytext.metrics import ModelMetricAdapter, ModelTargetMetric
 from easytext.metrics import SpanF1Metric
 from easytext.model import ModelOutputs
 from easytext.data import LabelVocabulary
+from easytext.label_decoder import ModelLabelDecoder
 
 from ner.models import NerModelOutputs
-from ner.label_decoder import NerMaxModelLabelDecoder
 
 
 class NerModelMetricAdapter(ModelMetricAdapter):
@@ -29,14 +29,16 @@ class NerModelMetricAdapter(ModelMetricAdapter):
     计算 Ner Model Metric
     """
 
-    def __init__(self, label_vocabulary: LabelVocabulary):
+    def __init__(self,
+                 label_vocabulary: LabelVocabulary,
+                 model_label_decoder: ModelLabelDecoder):
         self.span_f1_metric = SpanF1Metric(label_vocabulary)
-        self.label_decoder = NerMaxModelLabelDecoder(label_vocabulary=label_vocabulary)
+        self.model_label_decoder = model_label_decoder
 
     def __call__(self, model_outputs: ModelOutputs, golden_labels: Tensor) -> Tuple[Dict, ModelTargetMetric]:
         model_outputs: NerModelOutputs = model_outputs
 
-        prediction_labels = self.label_decoder.decode_label_index(model_outputs=model_outputs)
+        prediction_labels = self.model_label_decoder.decode_label_index(model_outputs=model_outputs)
 
         metric_dict = self.span_f1_metric(prediction_labels=prediction_labels,
                             gold_labels=golden_labels,
