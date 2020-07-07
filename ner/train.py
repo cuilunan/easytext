@@ -27,7 +27,7 @@ from easytext.data import GloveLoader
 from easytext.utils import log_util
 
 from ner import ROOT_PATH
-from ner.models import NerV1, NerV3
+from ner.models import NerV1, NerV2, NerV3
 from ner.data.dataset import Conll2003Dataset
 from ner.data import VocabularyCollate
 from ner.data import NerModelCollate
@@ -187,7 +187,7 @@ class Train:
                           num_layer=model_config["num_layer"],
                           dropout=model_config["dropout"])
         elif model_name == ModelName.NER_V2:
-            model = NerV1(token_vocabulary=token_vocabulary,
+            model = NerV2(token_vocabulary=token_vocabulary,
                           label_vocabulary=label_vocabulary,
                           word_embedding_dim=model_config["word_embedding_dim"],
                           hidden_size=model_config["hidden_size"],
@@ -314,5 +314,5 @@ class ModelName:
 if __name__ == '__main__':
     log_util.config(level=logging.INFO)
 
-    config = NerConfigFactory(debug=True, model_name=ModelName.NER_V3).create()
+    config = NerConfigFactory(debug=True, model_name=ModelName.NER_V2).create()
     Train(train_type=Train.NEW_TRAIN, config=config)()
