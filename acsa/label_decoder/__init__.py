@@ -5,8 +5,10 @@
 # Copyright (c) 2020 PanXu, Inc. All Rights Reserved
 #
 """
-brief
+label decoder
 
 Authors: PanXu
 Date:    2020/07/18 18:14:00
 """
+
+from .acsa_label_decoder import ACSALabelDecoder

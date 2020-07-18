@@ -36,7 +36,8 @@ class ACSAModelMetric(ModelMetricAdapter):
 
         prediction_labels = self._label_decoder.decode_label_index(model_outputs=cpu_model_outputs)
         metric_dict = self._metric(prediction_labels=prediction_labels,
-                                   gold_labels=golden_labels)
+                                   gold_labels=golden_labels,
+                                   mask=None)
 
         target_metric = ModelTargetMetric(metric_name=AccMetric.ACC,
                                           metric_value=metric_dict[AccMetric.ACC])

@@ -32,6 +32,10 @@ class ACSAConfigFactory(ConfigFactory):
 
     def create(self) -> Dict:
         config = dict()
+        config["debug"] = self.debug
+
+        config["model"] = dict()
+        model_config = config["model"]
 
         if self.debug:
             training_dataset_file_path = os.path.join(ROOT_PATH,
@@ -47,10 +51,20 @@ class ACSAConfigFactory(ConfigFactory):
             validation_dataset_file_path = os.path.join(ROOT_PATH,
                                                         "data/dataset/SemEval-2014-Task-4-REST/"
                                                         "ABSA_Gold_TestData/Restaurants_Test_Gold.xml")
-            config["pretrained_embedding"] = "data/pretrained/glove/glove.840B.300d.txt"
+            config["pretrained_file_path"] = "data/pretrained/glove/glove.840B.300d.txt"
 
         config["training_dataset_file_path"] = training_dataset_file_path
         config["validation_dataset_file_path"] = validation_dataset_file_path
+
+        config["serialize_dir"] = os.path.join(ROOT_PATH,
+                                               "data/acsa/atae_lstm/train")
+        config["num_epoches"] = 100
+        config["batch_size"] = 32
+        config["patient"] = 20
+        config["num_check_point_keep"] = 5
+
+        model_config["token_embedding_dim"] = 300
+        model_config["category_embedding_dim"] = 300
 
         return config
 

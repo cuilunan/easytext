@@ -41,6 +41,8 @@ class ATAELstm(Model):
                  category_embedding_dim: int,
                  label_vocabulary: LabelVocabulary
                  ):
+        super().__init__()
+
         self._token_vocabulary = token_vocabulary
 
         if isinstance(self._token_vocabulary, Vocabulary):
@@ -60,7 +62,7 @@ class ATAELstm(Model):
         self._category_vocabulary = category_vocabulary
         self.category_embedding = Embedding(num_embeddings=self._category_vocabulary.label_size,
                                             embedding_dim=category_embedding_dim,
-                                            padding_idx=self._aspect_vocabulary.padding_index)
+                                            padding_idx=self._category_vocabulary.padding_index)
 
         lstm_hidden_size = token_embedding_dim
         lstm_input_size = token_embedding_dim + category_embedding_dim
@@ -75,7 +77,7 @@ class ATAELstm(Model):
         attetion_value_hidden_size = None
         self.attention_seq2vec = AttentionSeq2Vec(input_size=attention_input_size,
                                                   query_hidden_size=lstm_input_size,
-                                                  attetion_value_hidden_size=None)
+                                                  value_hidden_size=attetion_value_hidden_size)
 
         attention_output_size = \
             attention_input_size if attetion_value_hidden_size is None else attetion_value_hidden_size
@@ -117,7 +119,7 @@ class ATAELstm(Model):
         # category.unsequeeze, (batch_size,) -> (batch_size, 1)
         category = category.unsqueeze(dim=1)
         # category.expand_as, (batch_size, 1) -> (batch_size, seq_len)
-        category = category.expand_as(sentence.size())
+        category = category.expand_as(sentence)
 
         # category embedding, shape: (batch_size, seq_len, category_embedding_dim)
         category_embedding = self.category_embedding(category)
@@ -133,7 +135,7 @@ class ATAELstm(Model):
                                                          batch_first=True,
                                                          enforce_sorted=False)
 
-        packed_sequence, (h_n, c_n) = self._lstm(packed_sentence_embedding)
+        packed_sequence, (h_n, c_n) = self.lstm(packed_sentence_embedding)
 
         # Tuple, sentence: shape: B * SeqLen * InputSize 和 sentence length
         (sentence_encoding, _) = pad_packed_sequence(packed_sequence, batch_first=True)
@@ -142,7 +144,7 @@ class ATAELstm(Model):
         h_n = torch.transpose(h_n, 0, 1)
 
         last_index = -2 if self.lstm.bidirectional else -1
-        hidden_size = self.lstm.hidden_size if self.lstm.bidirectional else self.lstm.hidden_size * 2
+        hidden_size = self.lstm.hidden_size * 2 if self.lstm.bidirectional else self.lstm.hidden_size
 
         # hn_last shape: (batch_size, hidden_size * (1 or 2))
         hn_last = h_n[:, last_index:, :].contiguous().view(-1, hidden_size)
