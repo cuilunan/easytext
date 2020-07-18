@@ -8,8 +8,5 @@
 brief
 
 Authors: PanXu
-Date:    2020/07/12 16:58:00
+Date:    2020/07/18 18:32:00
 """
-
-from .acsa_model_outputs import ACSAModelOutputs
-from .atae_lstm import ATAELstm
